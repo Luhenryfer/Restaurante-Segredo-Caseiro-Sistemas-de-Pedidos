@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dono - Sistema de Pedidos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color:#721b3d;
+        }
+        .hide {
+            display: none;
+        }
+        .logo {
+            display: block;
+            margin: 0 auto;
+            max-width: 150px;
+            height: auto;
+        }
+        #login-form label {
+            color: #fff;
+        }
+        #login-form input {
+            color: #fff;
+            background-color: #333;
+            border: 1px solid #555;
+        }
+        #login-form input:focus {
+            background-color: #444;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Tela de Login do Dono -->
+    <div id="login-screen" class="container">
+        <img src="IMG/WhatsApp Image 2024-09-26 at 13.09.45.jpeg" alt="Logo do Restaurante" class="logo">
+        <h1 class="text-center">Login do Dono</h1>
+        <form id="login-form">
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" class="form-control" id="nome" required>
+            </div>
+            <div class="mb-3">
+                <label for="telefone" class="form-label">Número de Celular</label>
+                <input type="text" class="form-control" id="telefone" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Entrar como Dono</button>
+        </form>
+    </div>
+
+    <!-- Área de Pedidos do Dono -->
+    <div id="dono-screen" class="container hide">
+        <img src="IMG/WhatsApp Image 2024-09-26 at 13.09.45.jpeg" alt="Logo do Restaurante" class="logo">
+        <font color="#fff"><h1 class="text-center">Pedidos Recebidos</h1></font>
+        <ul class="list-group" id="pedidos-recebidos"></ul>
+        <button class="btn btn-secondary mt-3" id="ver-historico">Ver Histórico de Pedidos Finalizados</button>
+        <button class="btn btn-secondary mt-3" id="atualizar-pedidos">Atualizar Pedidos Novos</button>
+        <button class="btn btn-danger mt-3" id="excluir-tudo">Excluir Todos os Pedidos</button>
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variáveis Globais
+        let historicoPedidos = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+        let pedidosFinalizados = JSON.parse(localStorage.getItem('pedidosFinalizados')) || [];
+
+        // Login do Dono
+        $('#login-form').submit(function(event) {
+            event.preventDefault();
+            $('#login-screen').addClass('hide');
+            $('#dono-screen').removeClass('hide');
+            carregarPedidosRecebidos();
+        });
+
+        // Função para carregar pedidos na página do dono
+        function carregarPedidosRecebidos() {
+            $('#pedidos-recebidos').empty();
+            let pedidosSalvos = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+            pedidosSalvos.forEach((pedido, index) => {
+                $('#pedidos-recebidos').append(`
+                    <li class="list-group-item">
+                        <strong>Pedido de ${pedido.usuario.nome} (${pedido.usuario.telefone})</strong> - R$ ${pedido.total.toFixed(2)}
+                        <p><strong>Forma de Pagamento:</strong> ${pedido.formaPagamento}</p>
+                        <ul>
+                            ${pedido.itens.map(item => `<li>${item.nome} - R$ ${item.preco.toFixed(2)}</li>`).join('')}
+                        </ul>
+                        <button class="btn btn-danger btn-sm" onclick="excluirPedido(${index})">Excluir Pedido</button>
+                    </li>
+                `);
+            });
+        }
+
+        function finalizarPedido(index) {
+    let pedidosSalvos = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+    let pedidoFinalizado = pedidosSalvos[index];
+    pedidosSalvos.splice(index, 1);
+    localStorage.setItem('historicoPedidos', JSON.stringify(pedidosSalvos));
+    
+    pedidosFinalizados.push(pedidoFinalizado);
+    localStorage.setItem('pedidosFinalizados', JSON.stringify(pedidosFinalizados));
+
+    carregarPedidosRecebidos();
+    alert('Pedido finalizado e movido para o histórico!');
+}
+$('#ver-historico').click(function() {
+    let pedidosFinalizados = JSON.parse(localStorage.getItem('pedidosFinalizados')) || [];
+    let historico = pedidosFinalizados.map(pedido => `
+        <li class="list-group-item">
+            <strong>Pedido de ${pedido.usuario.nome} (${pedido.usuario.telefone})</strong> - R$ ${pedido.total.toFixed(2)}
+            <p><strong>Forma de Pagamento:</strong> ${pedido.formaPagamento}</p>
+            <ul>
+                ${pedido.itens.map(item => `<li>${item.nome} - R$ ${item.preco.toFixed(2)}</li>`).join('')}
+            </ul>
+        </li>
+    `).join('');
+    
+    $('#pedidos-recebidos').html(historico);
+});
+
+// Excluir Pedido
+function excluirPedido(index) {
+            let pedidosSalvos = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+            let pedidoExcluido = pedidosSalvos[index];
+            pedidosSalvos.splice(index, 1); // Remove o pedido do array
+            localStorage.setItem('historicoPedidos', JSON.stringify(pedidosSalvos)); // Atualiza o LocalStorage
+            
+            // Adiciona o pedido excluído aos pedidos finalizados
+            pedidosFinalizados.push(pedidoExcluido);
+            localStorage.setItem('pedidosFinalizados', JSON.stringify(pedidosFinalizados)); // Atualiza os pedidos finalizados
+
+            carregarPedidosRecebidos(); // Atualiza a lista de pedidos recebidos
+            alert('Pedido excluído e movido para pedidos finalizados!');
+        }
+
+
+            // Carregar Pedidos Finalizados
+        function carregarPedidosFinalizados() {
+            $('#pedidos-finalizados-list').empty();
+            pedidosFinalizados.forEach((pedido) => {
+                $('#pedidos-finalizados-list').append(`
+                    <li class="list-group-item">
+                        <strong>Pedido de ${pedido.usuario.nome} (${pedido.usuario.telefone})</strong> - R$ ${pedido.total.toFixed(2)}
+                        <p><strong>Forma de Pagamento:</strong> ${pedido.formaPagamento}</p>
+                        <ul>
+                            ${pedido.itens.map(item => `<li>${item.nome} - R$ ${item.preco.toFixed(2)}</li>`).join('')}
+                        </ul>
+                    </li>
+                `);
+            });
+        }
+
+        // Voltar para Tela do Cliente
+        $('#voltar-cliente').click(function() {
+            $('#dono-screen').addClass('hide');
+            $('#login-screen').removeClass('hide');
+        });
+
+        // Ver Pedidos Finalizados
+        $('#ver-pedidos-finalizados').click(function() {
+            alert(`Total de pedidos finalizados hoje: ${pedidosFinalizados.length}`);
+        });
+        
+        
+
+        // Simulação de adicionar um pedido
+        function confirmarPedido(pedido) {
+            historicoPedidos.push(pedido);
+            localStorage.setItem('historicoPedidos', JSON.stringify(historicoPedidos));
+            carregarPedidosRecebidos();  // Atualiza a lista de pedidos do dono imediatamente
+        }
+        
+        // Ver Pedidos Finalizados
+        $('#ver-pedidos-finalizados').click(function() {
+            alert(`Total de pedidos finalizados hoje: ${pedidosFinalizados.length}`);
+        });
+        // Criar um BroadcastChannel
+const channel = new BroadcastChannel('pedidos_channel');
+
+
+// Ouvir mensagens do canal
+channel.onmessage = function(event) {
+    const pedido = event.data;
+    historicoPedidos.push(pedido);
+    localStorage.setItem('historicoPedidos', JSON.stringify(historicoPedidos));
+    carregarPedidosRecebidos(); // Atualiza a lista de pedidos
+};
+
+// Confirmar Pedido
+$('#confirmar-pedido').click(function() {
+    // ... Código existente ...
+
+    // Enviar mensagem ao canal
+    channel.postMessage(novoPedido);
+});
+
+// Atualizar Pedidos
+$('#atualizar-pedidos').click(function() {
+    carregarPedidosRecebidos(); // Atualiza a lista de pedidos recebidos
+});
+
+function excluirTodosPedidos() {
+    if (confirm('Tem certeza que deseja excluir todos os pedidos? Esta ação não pode ser desfeita.')) {
+        localStorage.removeItem('historicoPedidos');  // Remove todos os pedidos do LocalStorage
+        historicoPedidos = [];  // Limpa o array local
+        carregarPedidosRecebidos();  // Atualiza a lista de pedidos na tela
+        alert('Todos os pedidos foram excluídos.');
+    }
+}
+$('#excluir-tudo').click(function() {
+    excluirTodosPedidos();
+});
+
+    </script>
+
+    <footer class="text-center mt-5">
+        <p style="color: #fff;">&copy; 2024 Feito por  Consultoria L K <a href="https://www.instagram.com/lkdesigner_digital06" target="_blank" style="color: #fff; text-decoration: underline;">@lkdesigner_digital06</a></p>
+    </footer>
+</body>
+</html>
